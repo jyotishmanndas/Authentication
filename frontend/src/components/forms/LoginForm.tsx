@@ -25,6 +25,7 @@ const LoginForm = () => {
         try {
             const res = await axiosInstance.post("/api/v1/auth/login", data);
             if (res.status === 200) {
+                localStorage.setItem("token", res.data.token)
                 toast.success(res.data.msg);
                 form.reset()
                 navigate("/profile");

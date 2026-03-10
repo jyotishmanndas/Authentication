@@ -3,13 +3,16 @@ import { User } from "../models/user.model";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { sendVerifcationMail } from "../service/mail.service";
+import { loginSchema, signupSchema } from "../validation/auth.validation";
 
 export const signupController = async (req: Request, res: Response) => {
     try {
-        const { email, name, password } = req.body;
-        if (!email || !name || !password) {
-            return res.status(400).json({ msg: "All field are required" })
+        const parsed = signupSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ success: false, msg: "Invalid inputs", error: parsed.error.issues })
         };
+
+        const { email, name, password } = parsed.data
 
         const existingUser = await User.findOne({ email });
         if (existingUser) {
@@ -39,10 +42,12 @@ export const signupController = async (req: Request, res: Response) => {
 
 export const loginController = async (req: Request, res: Response) => {
     try {
-        const { email, password } = req.body;
-        if (!email || !password) {
-            return res.status(400).json({ msg: "All fields are required" })
+        const parsed = loginSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({ success: false, msg: "Invalid inputs", error: parsed.error.issues })
         };
+
+        const { email, password } = parsed.data
 
         const existingUser = await User.findOne({ email });
         if (!existingUser) {
