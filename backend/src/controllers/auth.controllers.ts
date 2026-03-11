@@ -24,7 +24,6 @@ export const signupController = async (req: Request, res: Response) => {
             email,
             name,
             password: hashedpassword,
-            isVerified: false
         });
 
         const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET!, { expiresIn: "20m" });
@@ -67,7 +66,16 @@ export const loginController = async (req: Request, res: Response) => {
 
         const token = jwt.sign({ id: existingUser._id }, process.env.JWT_SECRET!, { expiresIn: "20m" });
 
-        return res.status(200).json({ success: true, msg: "login successfully", token })
+        return res.status(200)
+            .cookie("token", token, {
+                httpOnly: true,
+                secure: true,
+                maxAge: 20 * 60 * 1000
+            })
+            .json({
+                success: true,
+                msg: "login successfully", token
+            })
     } catch (error) {
         console.log("Error while login", error);
         return res.status(500).json({ msg: "Internal server error" })
@@ -86,21 +94,21 @@ export const verifyEmailController = async (req: Request, res: Response) => {
             return res.status(400).json({ msg: "Verification link expired or invalid" })
         };
 
-        const user = await User.findOneAndUpdate(
-            { _id: decodedToken.id, isVerified: false },
-            {
-                $set: {
-                    isVerified: true
-                }
-            }
-        );
+        const user = await User.findById(decodedToken.id);
         if (!user) {
             return res.status(400).json({ msg: "User not found" })
         };
+
+        if (user.isVerified) {
+            return res.status(400).json({ msg: "Email already verified" })
+        };
+
+        user.isVerified = true;
+        await user.save();
 
         return res.status(200).json({ success: true, msg: "Email verified successfully" })
     } catch (error) {
         console.log("Error while verify email", error);
         return res.status(500).json({ msg: "Internal server error" })
     }
-}
+};

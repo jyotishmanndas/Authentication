@@ -27,7 +27,7 @@ const userSchema = new Schema<IUser>({
     },
     isVerified: {
         type: Boolean,
-        required: true,
+        default: false
     }
 }, {
     timestamps: true
